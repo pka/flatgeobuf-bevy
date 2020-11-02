@@ -1,73 +1,94 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::pass::ClearColor};
 use bevy_prototype_lyon::prelude::*;
-use std::f32::consts::{FRAC_PI_6, PI};
+use flatgeobuf::*;
+use geozero::error::Result;
+use geozero::GeomProcessor;
+use std::fs::File;
+use std::io::BufReader;
 
 fn main() {
     App::build()
+        .add_resource(ClearColor(Color::rgb(1.0, 1.0, 1.0)))
+        .add_resource(WindowDescriptor {
+            title: "Bevy map".to_string(),
+            width: 1067,
+            height: 800,
+            vsync: true,
+            resizable: false,
+            ..Default::default()
+        })
         .add_default_plugins()
         .add_startup_system(setup.system())
         .run();
 }
 
+struct PathDrawer {
+    center: Vec2,
+    pixel_size: Vec2,
+    builder: PathBuilder,
+}
+
+impl GeomProcessor for PathDrawer {
+    fn xy(&mut self, x: f64, y: f64, idx: usize) -> Result<()> {
+        let x = (x as f32 - self.center.x()) / self.pixel_size.x();
+        let y = (y as f32 - self.center.y()) / self.pixel_size.y();
+        if idx == 0 {
+            self.builder.move_to(point(x, y));
+        } else {
+            self.builder.line_to(point(x, y));
+        }
+        Ok(())
+    }
+    fn linestring_end(&mut self, _tagged: bool, _idx: usize) -> Result<()> {
+        self.builder.close();
+        Ok(())
+    }
+}
+
 fn setup(
     mut commands: Commands,
+    window: Res<WindowDescriptor>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    // Just making some colors...
-    let red = materials.add(Color::rgb(0.8, 0.0, 0.0).into());
-    let blue = materials.add(Color::rgb(0.1, 0.4, 0.5).into());
+    let mut file = BufReader::new(File::open("osm-buildings-ch.fgb").unwrap());
+    let mut fgb = FgbReader::open(&mut file).unwrap();
+    let geometry_type = fgb.header().geometry_type();
 
-    // To draw a path, you have to create a `PathBuilder` first. The initial point
-    // is set at (0.0, 0.0).
-    let mut builder = PathBuilder::new();
-    // Using that builder, you can build any shape:
-    builder.line_to(point(20.0, 70.0));
-    builder.quadratic_bezier_to(point(70.0, 70.0), point(120.0, 20.0));
-    builder.cubic_bezier_to(point(130.0, -20.0), point(0.0, -70.0), point(-70.0, -200.0));
-    builder.close(); // This draws a line to (0.0, 0.0)
-
-    // Calling `PathBuilder::move_to` will change the initial position, such that
-    // calling `PathBuilder::close` will draw a line to the new position
-    builder.move_to(point(-200.0, -200.0));
-    builder.line_to(point(-450.0, -300.0));
-    builder.line_to(point(-450.0, -200.0));
-    builder.close(); // This draws a line to (-200.0, -200.0).
-
-    // Finally, let's draw an arc. A line is drawn if the current position is
-    // outside the arc.
-    builder.move_to(point(-400.0, 300.0));
-    builder.arc(
-        point(-200.0, 100.0),
-        300.0,
-        150.0,
-        -PI, // use negative angles for a clockwise arc.
-        FRAC_PI_6,
+    let wsize = Vec2::new(window.width as f32, window.height as f32);
+    let center = Vec2::new(8.53, 47.37);
+    // Size of center pixel in map coordinates
+    let pixel_size = Vec2::new(0.00003, 0.00003); // TODO: calculate from scale and center
+    let bbox = (
+        center.x() - wsize.x() / 2.0 * pixel_size.x(),
+        center.y() - wsize.y() / 2.0 * pixel_size.y(),
+        center.x() + wsize.x() / 2.0 * pixel_size.x(),
+        center.y() + wsize.y() / 2.0 * pixel_size.y(),
     );
+
+    let grey = materials.add(Color::rgb(0.25, 0.25, 0.25).into());
+    let mut drawer = PathDrawer {
+        center,
+        pixel_size,
+        builder: PathBuilder::new(),
+    };
+    fgb.select_bbox(bbox.0 as f64, bbox.1 as f64, bbox.2 as f64, bbox.3 as f64)
+        .unwrap();
+    while let Some(feature) = fgb.next().unwrap() {
+        let geometry = feature.geometry().unwrap();
+        geometry.process(&mut drawer, geometry_type).unwrap();
+    }
 
     // Calling `PathBuilder::build` will return a `Path` ready to be used to create
     // Bevy entities.
-    let path = builder.build();
+    let path = drawer.builder.build();
 
     commands
         .spawn(Camera2dComponents::default())
-        // Let's draw the path by calling `Path::stroke`.
-        .spawn(
-            path.stroke(
-                red,
-                &mut meshes,
-                Vec3::new(0.0, 0.0, 0.0),
-                &StrokeOptions::default()
-                    .with_line_width(5.0)
-                    .with_line_cap(LineCap::Round)
-                    .with_line_join(LineJoin::Round),
-            ),
-        )
-        // You can also fill the path using `Path::fill`.
         .spawn(path.fill(
-            blue,
+            grey,
             &mut meshes,
-            Vec3::new(400.0, 0.0, 0.0),
+            Vec3::new(0.0, 0.0, 0.0),
             &FillOptions::default(),
         ));
     // Calling `Path::stroke` or `Path::fill`, returns a `SpriteComponents`
