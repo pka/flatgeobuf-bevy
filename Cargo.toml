@@ -1,0 +1,9 @@
+[package]
+name = "bevy-map"
+version = "0.1.0"
+authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
+edition = "2018"
+
+[dependencies]
+bevy = "0.2.1"
+bevy_prototype_lyon = "0.1.2"
