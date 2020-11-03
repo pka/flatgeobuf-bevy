@@ -5,7 +5,7 @@ authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 edition = "2018"
 
 [dependencies]
-bevy = "0.2.1"
-bevy_prototype_lyon = "0.1.2"
+bevy = "0.3.0"
+bevy_prototype_lyon = { path="../../bevy_prototype_lyon" }
 flatgeobuf = "0.3.4"
 geozero = "0.5.1"

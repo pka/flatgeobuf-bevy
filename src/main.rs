@@ -17,7 +17,7 @@ fn main() {
             resizable: false,
             ..Default::default()
         })
-        .add_default_plugins()
+        .add_plugins(DefaultPlugins)
         .add_startup_system(setup.system())
         .run();
 }
