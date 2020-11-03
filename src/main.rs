@@ -1,3 +1,5 @@
+mod pan_orbit_camera;
+
 use bevy::{prelude::*, render::pass::ClearColor};
 use bevy_prototype_lyon::prelude::*;
 use flatgeobuf::*;
@@ -17,6 +19,7 @@ fn main() {
             resizable: false,
             ..Default::default()
         })
+        .add_plugin(pan_orbit_camera::PanOrbitCameraPlugin)
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup.system())
         .run();
@@ -84,7 +87,7 @@ fn setup(
     let path = drawer.builder.build();
 
     commands
-        .spawn(Camera2dComponents::default())
+        // .spawn(Camera2dComponents::default())
         .spawn(path.fill(
             grey,
             &mut meshes,
