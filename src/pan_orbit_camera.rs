@@ -22,6 +22,8 @@ struct InputState {
     pub reader_scroll: EventReader<MouseWheel>,
 }
 
+const PAN_FACTOR: f32 = 100.0;
+
 /// Pan the camera with LHold or scrollwheel, orbit with rclick.
 fn pan_orbit_camera(
     time: Res<Time>,
@@ -44,7 +46,7 @@ fn pan_orbit_camera(
     } else if mousebtn.pressed(MouseButton::Left) {
         // Pan only if we're not rotating at the moment
         for ev in state.reader_motion.iter(&ev_motion) {
-            translation += ev.delta;
+            translation += ev.delta * PAN_FACTOR;
         }
     }
 
