@@ -2,7 +2,7 @@ use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::*;
 
 /// Tags an entity as capable of panning and orbiting.
-struct PanOrbitCamera {
+pub struct PanOrbitCamera {
     /// The "focus point" to orbit around. It is automatically updated when panning the camera
     pub focus: Vec3,
 }
