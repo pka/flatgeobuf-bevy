@@ -1,5 +1,6 @@
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::*;
+use std::time::Instant;
 
 /// Tags an entity as capable of panning and orbiting.
 pub struct PanOrbitCamera {
@@ -17,8 +18,9 @@ impl Default for PanOrbitCamera {
 
 /// Hold readers for events
 #[derive(Default)]
-struct InputState {
+pub struct InputState {
     pub reader_motion: EventReader<MouseMotion>,
+    pub last_motion: Option<Instant>,
     pub reader_scroll: EventReader<MouseWheel>,
 }
 
@@ -47,6 +49,7 @@ fn pan_orbit_camera(
         // Pan only if we're not rotating at the moment
         for ev in state.reader_motion.iter(&ev_motion) {
             translation += ev.delta * PAN_FACTOR;
+            state.last_motion = Some(Instant::now());
         }
     }
 

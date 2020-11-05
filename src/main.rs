@@ -1,6 +1,6 @@
 mod pan_orbit_camera;
 
-use crate::pan_orbit_camera::PanOrbitCamera;
+use crate::pan_orbit_camera::{InputState, PanOrbitCamera};
 use bevy::{prelude::*, render::pass::ClearColor};
 use bevy_prototype_lyon::prelude::*;
 use flatgeobuf::*;
@@ -65,14 +65,26 @@ impl GeomProcessor for PathDrawer {
     }
 }
 
-fn pan_map(mousebtn: Res<Input<MouseButton>>, mut map: ResMut<Map>, query: Query<&PanOrbitCamera>) {
+const PAN_DELAY: u128 = 200;
+
+fn pan_map(
+    mut state: ResMut<InputState>,
+    mousebtn: Res<Input<MouseButton>>,
+    mut map: ResMut<Map>,
+    query: Query<&PanOrbitCamera>,
+) {
+    let motion_paused = state
+        .last_motion
+        .map(|last| last.elapsed().as_millis() > PAN_DELAY)
+        .unwrap_or(false);
     // set map offset after end of panning
-    if mousebtn.just_released(MouseButton::Left) {
+    if mousebtn.just_released(MouseButton::Left) || motion_paused {
         let mut focus = Vec3::default();
         for camera in query.iter() {
             focus = camera.focus;
         }
         map.offset = Some(focus);
+        state.last_motion = None;
     }
 }
 
