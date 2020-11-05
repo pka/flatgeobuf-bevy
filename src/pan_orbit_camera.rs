@@ -22,6 +22,7 @@ pub struct InputState {
     pub reader_motion: EventReader<MouseMotion>,
     pub last_motion: Option<Instant>,
     pub reader_scroll: EventReader<MouseWheel>,
+    pub last_zoom: Option<Instant>,
 }
 
 const PAN_FACTOR: f32 = 100.0;
@@ -82,6 +83,9 @@ fn pan_orbit_camera(
             camera.focus += translation;
             *translation.z_mut() = -scroll;
             trans.translation += translation;
+            if scroll != 0.0 {
+                state.last_zoom = Some(Instant::now());
+            }
         }
     }
 }
