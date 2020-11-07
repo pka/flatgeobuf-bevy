@@ -12,6 +12,7 @@ use std::time::Instant;
 
 fn main() {
     App::build()
+        .add_event::<UpdateMapEvent>()
         .add_resource(ClearColor(Color::rgb(1.0, 1.0, 1.0)))
         .add_resource(WindowDescriptor {
             title: "Bevy map".to_string(),
@@ -23,13 +24,14 @@ fn main() {
         })
         .add_resource(Map {
             center: Vec2::new(8.53, 47.37),
-            offset: Some(Vec3::default()),
+            offset: Vec3::default(),
             resolution: 0.00003,
-            zoom: Some(1.0),
+            zoom: 1.0,
         })
         // .spawn(Camera2dComponents::default())
         .add_plugin(pan_orbit_camera::PanOrbitCameraPlugin)
         .add_plugins(DefaultPlugins)
+        .add_startup_system(setup_map.system())
         .add_system(pan_or_zoom.system())
         .add_system(update_map.system())
         .run();
@@ -38,11 +40,11 @@ fn main() {
 struct Map {
     center: Vec2,
     /// panning offset
-    offset: Option<Vec3>,
+    offset: Vec3,
     /// Map units per pixel at center. (e.g. m/pixel or degree/pixel)
     resolution: f32,
     /// zoom factor
-    zoom: Option<f32>,
+    zoom: f32,
 }
 
 struct PathDrawer {
@@ -68,15 +70,29 @@ impl GeomProcessor for PathDrawer {
     }
 }
 
+struct UpdateMapEvent {
+    offset: Option<Vec3>,
+    zoom: Option<f32>,
+}
+
 const PAN_DELAY: u128 = 200;
 const ZOOM_DELAY: u128 = 150;
+
+fn setup_map(mut map_events: ResMut<Events<UpdateMapEvent>>) {
+    map_events.send(UpdateMapEvent {
+        offset: Some(Vec3::default()),
+        zoom: Some(1.0),
+    });
+}
 
 fn pan_or_zoom(
     mut state: ResMut<InputState>,
     mousebtn: Res<Input<MouseButton>>,
-    mut map: ResMut<Map>,
+    mut map_events: ResMut<Events<UpdateMapEvent>>,
     query: Query<(&PanOrbitCamera, &Transform)>,
 ) {
+    let mut offset = None;
+    let mut zoom = None;
     let motion_paused = state
         .last_motion
         .map(|last| last.elapsed().as_millis() > PAN_DELAY)
@@ -84,7 +100,7 @@ fn pan_or_zoom(
     // set map offset after end of panning
     if mousebtn.just_released(MouseButton::Left) || motion_paused {
         for (camera, _) in query.iter().take(1) {
-            map.offset = Some(camera.focus);
+            offset = Some(camera.focus);
         }
         state.last_motion = None;
     }
@@ -96,26 +112,32 @@ fn pan_or_zoom(
     // set map resolution after end of zooming
     if zoom_paused {
         for (_, transform) in query.iter().take(1) {
-            let z = transform.translation.z();
-            let fact = 1000.0 / z;
-            map.zoom = Some(fact * 2.0);
+            let zfact = 1000.0 / transform.translation.z();
+            zoom = Some(1.0 + (1.0 - zfact) * 20.0);
         }
         state.last_zoom = None;
+    }
+    if offset.is_some() || zoom.is_some() {
+        map_events.send(UpdateMapEvent { offset, zoom });
     }
 }
 
 fn update_map(
     mut commands: Commands,
     window: Res<WindowDescriptor>,
-    mut map: ResMut<Map>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut map: ResMut<Map>,
+    mut map_event_reader: Local<EventReader<UpdateMapEvent>>,
+    map_events: Res<Events<UpdateMapEvent>>,
 ) {
-    if map.offset.is_some() || map.zoom.is_some() {
-        let offset = map.offset.unwrap_or(Vec3::default());
-        map.offset = None;
-        let zoom = map.zoom.unwrap_or(1.0);
-        map.zoom = None;
+    for map_event in map_event_reader.iter(&map_events) {
+        if let Some(offset) = map_event.offset {
+            map.offset = offset;
+        }
+        if let Some(zoom) = map_event.zoom {
+            map.zoom = zoom;
+        }
 
         let start = Instant::now();
         let mut file = BufReader::new(File::open("osm-buildings-ch.fgb").unwrap());
@@ -123,10 +145,10 @@ fn update_map(
         let geometry_type = fgb.header().geometry_type();
 
         let wsize = Vec2::new(window.width as f32, window.height as f32);
-        let resolution = map.resolution * zoom;
+        let resolution = map.resolution * map.zoom;
         let center = Vec2::new(
-            map.center.x() + offset.x() * resolution,
-            map.center.y() + offset.y() * resolution,
+            map.center.x() + map.offset.x() * resolution,
+            map.center.y() + map.offset.y() * resolution,
         );
         let bbox = (
             center.x() - wsize.x() / 2.0 * resolution,
@@ -158,7 +180,7 @@ fn update_map(
         if let Some(entity) = commands.current_entity() {
             commands.despawn(entity);
         }
-        commands.spawn(path.fill(grey, &mut meshes, offset, &FillOptions::default()));
+        commands.spawn(path.fill(grey, &mut meshes, map.offset, &FillOptions::default()));
         println!("Tesselate: {:?}", start.elapsed());
         // Calling `Path::stroke` or `Path::fill`, returns a `SpriteComponents`
         // bundle, which can be fed into Bevy's ECS system as `Entities`.
