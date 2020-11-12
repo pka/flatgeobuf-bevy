@@ -64,7 +64,7 @@ impl GeomProcessor for PathDrawer {
         }
         Ok(())
     }
-    fn linestring_end(&mut self, _tagged: bool, _idx: usize) -> Result<()> {
+    fn polygon_end(&mut self, _tagged: bool, _idx: usize) -> Result<()> {
         self.builder.close();
         Ok(())
     }
