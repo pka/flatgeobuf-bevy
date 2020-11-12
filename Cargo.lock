@@ -284,16 +284,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0b37e032266000f7b62b75b562cdcdccdd655294d26042460fd757daf3a5f82"
 
 [[package]]
-name = "bevy-map"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy_prototype_lyon",
- "flatgeobuf",
- "geozero",
-]
-
-[[package]]
 name = "bevy_app"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -559,7 +549,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_prototype_lyon"
-version = "0.1.2"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "072a99b06b7c71e1cb1b7d9aa404f5d9be8a7a8df86e64fa3f8d03f029cc58eb"
 dependencies = [
  "bevy",
  "lyon",
@@ -1416,6 +1408,16 @@ dependencies = [
  "flatbuffers",
  "geozero",
  "reqwest",
+]
+
+[[package]]
+name = "flatgeobuf-wgpu"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_prototype_lyon",
+ "flatgeobuf",
+ "geozero",
 ]
 
 [[package]]

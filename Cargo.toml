@@ -1,11 +1,11 @@
 [package]
-name = "bevy-map"
+name = "flatgeobuf-wgpu"
 version = "0.1.0"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 edition = "2018"
 
 [dependencies]
 bevy = "0.3.0"
-bevy_prototype_lyon = { path="../../bevy_prototype_lyon" }
+bevy_prototype_lyon = "0.1.3"
 flatgeobuf = "0.3.4"
 geozero = "0.5.1"
