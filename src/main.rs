@@ -140,7 +140,7 @@ fn update_map(
         }
 
         let start = Instant::now();
-        let mut file = BufReader::new(File::open("osm-buildings-ch.fgb").unwrap());
+        let mut file = BufReader::new(File::open("osm-buildings-zurich.fgb").unwrap());
         let mut fgb = FgbReader::open(&mut file).unwrap();
         let geometry_type = fgb.header().geometry_type();
 
