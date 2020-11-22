@@ -1,11 +1,28 @@
 [package]
-name = "flatgeobuf-wgpu"
+name = "flatgeobuf-bevy"
 version = "0.1.0"
 authors = ["Pirmin Kalberer <pka@sourcepole.ch>"]
 edition = "2018"
 
+[features]
+default = ["native"]
+
+native = [
+  "bevy/bevy_winit",
+  "bevy/render",
+  "bevy/bevy_wgpu",
+]
+
+web = [
+  "bevy_webgl2",
+  "wasm-bindgen",
+]
+
 [dependencies]
-bevy = "0.3.0"
-bevy_prototype_lyon = "0.1.3"
+bevy = {git = "https://github.com/bevyengine/bevy", rev = "7628f4a64e", default-features = false}
+bevy_webgl2 = {git = "https://github.com/mrk-its/bevy_webgl2", rev = "e34106ba1e", optional = true}
+winit = {version = "0.23.0", features = ["web-sys", "x11"], default-features = false}
+bevy_prototype_lyon = { git = "https://github.com/pka/bevy_prototype_lyon/", branch="bevy-master" }
 flatgeobuf = "0.3.4"
 geozero = "0.5.1"
+wasm-bindgen = {version="0.2.68", optional = true}

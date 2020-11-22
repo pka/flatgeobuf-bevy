@@ -1,12 +1,33 @@
-# FlatGeobuf WebGPU
+# FlatGeobuf rendering with Bevy Engine
 
-Experimental native WebGPU rendering of [FlatGeobuf](https://bjornharrtell.github.io/flatgeobuf/)
+Experimental rendering of [FlatGeobuf](https://bjornharrtell.github.io/flatgeobuf/) geometries
 with [Bevy Engine](https://bevyengine.org/).
+
+Uses WebGPU for native targets and WebGL2 for Web platform (WASM).
 
 ![gif](flatgeobuf-wgpu.gif)
 
-## Build and run
+## Native platforms
 
-* `cargo build --release`
+* `cargo run --release`
 
-* `./target/release/flatgeobuf-wgpu`
+or
+
+* `make run`
+
+
+## Web (WASM)
+
+Prerequisites:
+
+```
+cargo install wasm-bindgen-cli
+cargo install basic-http-server
+```
+
+Build and start web server:
+```
+make serve
+```
+
+and point your browser to `http://127.0.0.1:4000`

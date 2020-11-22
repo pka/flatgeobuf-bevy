@@ -1,6 +1,6 @@
+use crate::instant::Instant;
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::*;
-use std::time::Instant;
 
 /// Tags an entity as capable of panning and orbiting.
 pub struct PanOrbitCamera {
@@ -20,12 +20,19 @@ impl Default for PanOrbitCamera {
 #[derive(Default)]
 pub struct InputState {
     pub reader_motion: EventReader<MouseMotion>,
+    // Web: We get CursorMoved instead of MouseMotion events
+    pub reader_cursor: EventReader<CursorMoved>,
+    // Web: First position after pressing mouse button
+    pub cursor_startpos: Option<Vec2>,
+    // Timestamp when motions begins
     pub last_motion: Option<Instant>,
     pub reader_scroll: EventReader<MouseWheel>,
+    // Timestamp when scroll begins
     pub last_zoom: Option<Instant>,
 }
 
 const PAN_FACTOR: f32 = 100.0;
+const PAN_FACTOR_WEB: f32 = 2.0;
 
 /// Pan the camera with LHold or scrollwheel, orbit with rclick.
 fn pan_orbit_camera(
@@ -33,6 +40,7 @@ fn pan_orbit_camera(
     windows: Res<Windows>,
     mut state: ResMut<InputState>,
     ev_motion: Res<Events<MouseMotion>>,
+    ev_cursor: Res<Events<CursorMoved>>,
     mousebtn: Res<Input<MouseButton>>,
     ev_scroll: Res<Events<MouseWheel>>,
     mut query: Query<(&mut PanOrbitCamera, &mut Transform)>,
@@ -46,12 +54,32 @@ fn pan_orbit_camera(
         for ev in state.reader_motion.iter(&ev_motion) {
             rotation_move += ev.delta;
         }
+        // Web: absolute position instead of delta
+        for ev in state.reader_cursor.iter(&ev_cursor) {
+            if let Some(startpos) = state.cursor_startpos {
+                rotation_move.set_x((ev.position.x() - startpos.x()) * PAN_FACTOR_WEB);
+                rotation_move.set_y((startpos.y() - ev.position.y()) * PAN_FACTOR_WEB);
+            } else {
+                state.cursor_startpos = Some(ev.position);
+            }
+        }
     } else if mousebtn.pressed(MouseButton::Left) {
         // Pan only if we're not rotating at the moment
         for ev in state.reader_motion.iter(&ev_motion) {
             translation += ev.delta * PAN_FACTOR;
             state.last_motion = Some(Instant::now());
         }
+        // Web: absolute position instead of delta
+        for ev in state.reader_cursor.iter(&ev_cursor) {
+            if let Some(startpos) = state.cursor_startpos {
+                translation.set_x((ev.position.x() - startpos.x()) * PAN_FACTOR_WEB);
+                translation.set_y((startpos.y() - ev.position.y()) * PAN_FACTOR_WEB);
+            } else {
+                state.cursor_startpos = Some(ev.position);
+            }
+        }
+    } else {
+        state.cursor_startpos = None;
     }
 
     for ev in state.reader_scroll.iter(&ev_scroll) {
@@ -90,22 +118,10 @@ fn pan_orbit_camera(
     }
 }
 
-// Spawn a camera like this:
-
-fn spawn_camera(mut commands: Commands) {
+fn spawn_camera2d(commands: &mut Commands) {
     commands
         .spawn((PanOrbitCamera::default(),))
-        .with_bundle(Camera3dComponents {
-            ..Default::default()
-        });
-}
-
-fn spawn_camera2d(mut commands: Commands) {
-    commands
-        .spawn((PanOrbitCamera::default(),))
-        .with_bundle(Camera2dComponents {
-            ..Default::default()
-        });
+        .with_bundle(Camera2dBundle::default());
 }
 
 pub struct PanOrbitCameraPlugin;
@@ -113,7 +129,7 @@ pub struct PanOrbitCameraPlugin;
 impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_resource(InputState::default())
-            .add_startup_system(spawn_camera2d.system())
+            .add_system(spawn_camera2d.system())
             .add_system(pan_orbit_camera.system());
     }
 }
