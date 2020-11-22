@@ -26,3 +26,10 @@ bevy_prototype_lyon = { git = "https://github.com/pka/bevy_prototype_lyon/", bra
 flatgeobuf = "0.3.4"
 geozero = "0.5.1"
 wasm-bindgen = {version="0.2.68", optional = true}
+
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+lto = true
+opt-level = 's'
