@@ -1,7 +1,6 @@
 mod instant;
 mod pan_orbit_camera;
 
-use crate::instant::Instant;
 use crate::pan_orbit_camera::{InputState, PanOrbitCamera};
 #[cfg(target_arch = "wasm32")]
 use bevy::tasks::IoTaskPool;
@@ -141,6 +140,8 @@ fn update_map(
     map_events: Res<Events<UpdateMapEvent>>,
 ) {
     if let Some(map_event) = map_event_reader.iter(&map_events).last() {
+        let span = info_span!("update_map");
+        let _update_map_span = span.enter();
         let (center, resolution, bbox) = apply_map_event(&window, &mut map, map_event);
         let path = read_fgb(bbox, center, resolution);
 
@@ -149,9 +150,9 @@ fn update_map(
             commands.despawn(entity);
         }
         let grey = materials.add(Color::rgb(0.25, 0.25, 0.25).into());
-        let start = Instant::now();
+        let span = info_span!("Tesselate");
+        let _tesselate_span = span.enter();
         commands.spawn(path.fill(grey, &mut meshes, map.offset, &FillOptions::default()));
-        info!("Tesselate: {:?}", start.elapsed());
     }
 }
 
@@ -167,6 +168,8 @@ fn update_map_async(
     map_events: Res<Events<UpdateMapEvent>>,
 ) {
     if let Some(map_event) = map_event_reader.iter(&map_events).last() {
+        let span = info_span!("update_map");
+        let _update_map_span = span.enter();
         let (center, resolution, bbox) = apply_map_event(&window, &mut map, map_event);
         let offset = map.offset;
         let grey = materials.add(Color::rgb(0.25, 0.25, 0.25).into());
@@ -176,9 +179,9 @@ fn update_map_async(
             if let Some(entity) = commands.current_entity() {
                 commands.despawn(entity);
             }
-            info!("commands.spawn path.fill");
+            let span = info_span!("Tesselate");
+            let _tesselate_span = span.enter();
             commands.spawn(path.fill(grey, &mut meshes, offset, &FillOptions::default()));
-            info!("update_map finished");
         });
     }
 }
@@ -213,7 +216,8 @@ pub fn read_fgb(bbox: (f64, f64, f64, f64), center: Vec2, resolution: f32) -> Pa
     use std::fs::File;
     use std::io::BufReader;
 
-    let start = Instant::now();
+    let span = info_span!("read_fgb");
+    let _read_fgb_span = span.enter();
     let mut file = BufReader::new(File::open("osm-buildings-zurich.fgb").unwrap());
     let mut fgb = FgbReader::open(&mut file).unwrap();
     let geometry_type = fgb.header().geometry_type();
@@ -229,18 +233,17 @@ pub fn read_fgb(bbox: (f64, f64, f64, f64), center: Vec2, resolution: f32) -> Pa
         geometry.process(&mut drawer, geometry_type).unwrap();
     }
     let path = drawer.builder.build();
-    info!("Read data into Lyon path: {:?}", start.elapsed());
     path
 }
 
 pub async fn read_fgb_http(bbox: (f64, f64, f64, f64), center: Vec2, resolution: f32) -> Path {
-    info!("HttpFgbReader::open");
+    let span = info_span!("read_fgb_http");
+    let _read_fgb_http_span = span.enter();
     let mut fgb = HttpFgbReader::open("https://pkg.sourcepole.ch/osm-buildings-zurich.fgb")
         .await
         .unwrap();
     let geometry_type = fgb.header().geometry_type();
 
-    info!("select_bbox");
     fgb.select_bbox(bbox.0, bbox.1, bbox.2, bbox.3)
         .await
         .unwrap();
@@ -249,12 +252,10 @@ pub async fn read_fgb_http(bbox: (f64, f64, f64, f64), center: Vec2, resolution:
         resolution,
         builder: PathBuilder::new(),
     };
-    info!("read polygons");
     while let Some(feature) = fgb.next().await.unwrap() {
         let geometry = feature.geometry().unwrap();
         geometry.process(&mut drawer, geometry_type).unwrap();
     }
 
-    info!("drawer.builder");
     drawer.builder.build()
 }

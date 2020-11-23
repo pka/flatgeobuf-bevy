@@ -31,3 +31,19 @@ make serve
 ```
 
 and point your browser to `http://127.0.0.1:4000`
+
+
+## Tracing
+
+Enable tracing information with `--features=trace` (enabled in `make run` and `make serve`).
+
+Native:
+- Run application
+- Open Chrome(-ium)
+- Open chrome://tracing/
+- Load `trace-xxx.json`
+
+Web:
+- Run application in Chrome(-ium)
+- Open developer tools
+- Profile in `Performance` tab
