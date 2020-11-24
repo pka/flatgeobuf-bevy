@@ -1,14 +1,12 @@
 mod instant;
 mod pan_orbit_camera;
+mod tesselate;
 
 use crate::pan_orbit_camera::{InputState, PanOrbitCamera};
+use crate::tesselate::tesselate;
 #[cfg(target_arch = "wasm32")]
 use bevy::tasks::IoTaskPool;
 use bevy::{prelude::*, render::pass::ClearColor};
-use bevy_prototype_lyon::prelude::*;
-use flatgeobuf::*;
-use geozero::error::Result;
-use geozero::GeomProcessor;
 
 fn main() {
     let mut app = App::build();
@@ -48,29 +46,6 @@ struct Map {
     resolution: f32,
     /// zoom factor
     zoom: f32,
-}
-
-struct PathDrawer {
-    center: Vec2,
-    resolution: f32,
-    builder: PathBuilder,
-}
-
-impl GeomProcessor for PathDrawer {
-    fn xy(&mut self, x: f64, y: f64, idx: usize) -> Result<()> {
-        let x = (x as f32 - self.center.x()) / self.resolution;
-        let y = (y as f32 - self.center.y()) / self.resolution;
-        if idx == 0 {
-            self.builder.move_to(point(x, y));
-        } else {
-            self.builder.line_to(point(x, y));
-        }
-        Ok(())
-    }
-    fn polygon_end(&mut self, _tagged: bool, _idx: usize) -> Result<()> {
-        self.builder.close();
-        Ok(())
-    }
 }
 
 struct UpdateMapEvent {
@@ -139,6 +114,7 @@ fn update_map(
     mut map_event_reader: Local<EventReader<UpdateMapEvent>>,
     map_events: Res<Events<UpdateMapEvent>>,
 ) {
+    use crate::tesselate::read_fgb;
     if let Some(map_event) = map_event_reader.iter(&map_events).last() {
         let span = info_span!("update_map");
         let _update_map_span = span.enter();
@@ -150,9 +126,8 @@ fn update_map(
             commands.despawn(entity);
         }
         let grey = materials.add(Color::rgb(0.25, 0.25, 0.25).into());
-        let span = info_span!("Tesselate");
-        let _tesselate_span = span.enter();
-        commands.spawn(path.fill(grey, &mut meshes, map.offset, &FillOptions::default()));
+        let sprite = tesselate(path, map.offset, grey, &mut meshes);
+        commands.spawn(sprite);
     }
 }
 
@@ -167,6 +142,7 @@ fn update_map_async(
     mut map_event_reader: Local<EventReader<UpdateMapEvent>>,
     map_events: Res<Events<UpdateMapEvent>>,
 ) {
+    use crate::tesselate::read_fgb_http;
     if let Some(map_event) = map_event_reader.iter(&map_events).last() {
         let span = info_span!("update_map");
         let _update_map_span = span.enter();
@@ -179,9 +155,8 @@ fn update_map_async(
             if let Some(entity) = commands.current_entity() {
                 commands.despawn(entity);
             }
-            let span = info_span!("Tesselate");
-            let _tesselate_span = span.enter();
-            commands.spawn(path.fill(grey, &mut meshes, offset, &FillOptions::default()));
+            let sprite = tesselate(path, offset, grey, &mut meshes);
+            commands.spawn(sprite);
         });
     }
 }
@@ -210,52 +185,4 @@ fn apply_map_event(
         (center.y() + wsize.y() / 2.0 * resolution) as f64,
     );
     (center, resolution, bbox)
-}
-
-pub fn read_fgb(bbox: (f64, f64, f64, f64), center: Vec2, resolution: f32) -> Path {
-    use std::fs::File;
-    use std::io::BufReader;
-
-    let span = info_span!("read_fgb");
-    let _read_fgb_span = span.enter();
-    let mut file = BufReader::new(File::open("osm-buildings-zurich.fgb").unwrap());
-    let mut fgb = FgbReader::open(&mut file).unwrap();
-    let geometry_type = fgb.header().geometry_type();
-
-    let mut drawer = PathDrawer {
-        center,
-        resolution,
-        builder: PathBuilder::new(),
-    };
-    fgb.select_bbox(bbox.0, bbox.1, bbox.2, bbox.3).unwrap();
-    while let Some(feature) = fgb.next().unwrap() {
-        let geometry = feature.geometry().unwrap();
-        geometry.process(&mut drawer, geometry_type).unwrap();
-    }
-    let path = drawer.builder.build();
-    path
-}
-
-pub async fn read_fgb_http(bbox: (f64, f64, f64, f64), center: Vec2, resolution: f32) -> Path {
-    let span = info_span!("read_fgb_http");
-    let _read_fgb_http_span = span.enter();
-    let mut fgb = HttpFgbReader::open("https://pkg.sourcepole.ch/osm-buildings-zurich.fgb")
-        .await
-        .unwrap();
-    let geometry_type = fgb.header().geometry_type();
-
-    fgb.select_bbox(bbox.0, bbox.1, bbox.2, bbox.3)
-        .await
-        .unwrap();
-    let mut drawer = PathDrawer {
-        center,
-        resolution,
-        builder: PathBuilder::new(),
-    };
-    while let Some(feature) = fgb.next().await.unwrap() {
-        let geometry = feature.geometry().unwrap();
-        geometry.process(&mut drawer, geometry_type).unwrap();
-    }
-
-    drawer.builder.build()
 }
