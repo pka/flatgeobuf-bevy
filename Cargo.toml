@@ -32,6 +32,6 @@ wasm-bindgen = {version="0.2.68", optional = true}
 [profile.dev]
 opt-level = 1
 
-[profile.release]
-lto = true
-opt-level = 's'
+#[profile.release]
+#lto = true
+#opt-level = 's'
