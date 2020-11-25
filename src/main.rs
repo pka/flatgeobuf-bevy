@@ -3,7 +3,6 @@ mod pan_orbit_camera;
 mod tesselate;
 
 use crate::pan_orbit_camera::{InputState, PanOrbitCamera};
-use crate::tesselate::tesselate;
 #[cfg(target_arch = "wasm32")]
 use bevy::tasks::IoTaskPool;
 use bevy::{prelude::*, render::pass::ClearColor};
@@ -119,14 +118,23 @@ fn update_map(
         let span = info_span!("update_map");
         let _update_map_span = span.enter();
         let (center, resolution, bbox) = apply_map_event(&window, &mut map, map_event);
-        let path = read_fgb(bbox, center, resolution);
+        let mesh = read_fgb(bbox, center, resolution);
 
         // Remove previous sprite
         if let Some(entity) = commands.current_entity() {
             commands.despawn(entity);
         }
         let grey = materials.add(Color::rgb(0.25, 0.25, 0.25).into());
-        let sprite = tesselate(path, map.offset, grey, &mut meshes);
+        let sprite = SpriteBundle {
+            material: grey,
+            mesh: meshes.add(mesh),
+            sprite: Sprite {
+                size: Vec2::new(1.0, 1.0),
+                ..Default::default()
+            },
+            transform: Transform::from_translation(map.offset),
+            ..Default::default()
+        };
         commands.spawn(sprite);
     }
 }
@@ -150,12 +158,21 @@ fn update_map_async(
         let offset = map.offset;
         let grey = materials.add(Color::rgb(0.25, 0.25, 0.25).into());
         pool.spawn(async move {
-            let path = read_fgb_http(bbox, center, resolution).await;
+            let mesh = read_fgb_http(bbox, center, resolution).await;
             // Remove previous sprite
             if let Some(entity) = commands.current_entity() {
                 commands.despawn(entity);
             }
-            let sprite = tesselate(path, offset, grey, &mut meshes);
+            let sprite = SpriteBundle {
+                material: grey,
+                mesh: meshes.add(mesh),
+                sprite: Sprite {
+                    size: Vec2::new(1.0, 1.0),
+                    ..Default::default()
+                },
+                transform: Transform::from_translation(offset),
+                ..Default::default()
+            };
             commands.spawn(sprite);
         });
     }
