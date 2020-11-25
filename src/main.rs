@@ -1,6 +1,7 @@
 mod instant;
 mod pan_orbit_camera;
 mod tesselate;
+mod triangulate;
 
 use crate::pan_orbit_camera::{InputState, PanOrbitCamera};
 #[cfg(target_arch = "wasm32")]
@@ -113,7 +114,7 @@ fn update_map(
     mut map_event_reader: Local<EventReader<UpdateMapEvent>>,
     map_events: Res<Events<UpdateMapEvent>>,
 ) {
-    use crate::tesselate::read_fgb;
+    use crate::triangulate::read_fgb;
     if let Some(map_event) = map_event_reader.iter(&map_events).last() {
         let span = info_span!("update_map");
         let _update_map_span = span.enter();
@@ -150,7 +151,7 @@ fn update_map_async(
     mut map_event_reader: Local<EventReader<UpdateMapEvent>>,
     map_events: Res<Events<UpdateMapEvent>>,
 ) {
-    use crate::tesselate::read_fgb_http;
+    use crate::triangulate::read_fgb_http;
     if let Some(map_event) = map_event_reader.iter(&map_events).last() {
         let span = info_span!("update_map");
         let _update_map_span = span.enter();

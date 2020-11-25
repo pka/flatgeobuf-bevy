@@ -1038,6 +1038,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "134951f4028bdadb9b84baf4232681efbf277da25144b9b0ad65df75946c422b"
 
 [[package]]
+name = "earcutr"
+version = "0.1.0"
+source = "git+https://github.com/donbright/earcutr#aaa18bfdfe581db26bb9869aec170329b4e14f4c"
+
+[[package]]
 name = "encoding_rs"
 version = "0.8.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1145,6 +1150,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_webgl2",
+ "earcutr",
  "flatgeobuf",
  "geozero",
  "lyon",
