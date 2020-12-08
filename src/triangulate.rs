@@ -26,20 +26,17 @@ impl GeomProcessor for Earcutr {
         Ok(())
     }
     fn linestring_begin(&mut self, tagged: bool, size: usize, idx: usize) -> Result<()> {
-        if !tagged {
-            if idx > 0 {
-                // FIXME: self.hole_indices.push(self.coords.len());
-            }
-            self.coords.reserve(size * 2);
+        if !tagged && idx > 0 {
+            self.hole_indices.push(self.coords.len() / 2);
         }
+        self.coords.reserve(size * 2);
         Ok(())
     }
     fn polygon_end(&mut self, _tagged: bool, _idx: usize) -> Result<()> {
         // Convert coords to mesh vertices
         self.vertices.reserve(self.coords.len() / 2);
-        for i in (0..self.coords.len()).step_by(2) {
-            self.vertices
-                .push([self.coords[i] as f32, self.coords[i + 1] as f32]);
+        for coord in self.coords.chunks(2) {
+            self.vertices.push([coord[0] as f32, coord[1] as f32]);
         }
         // Calculate and add triangles to mesh
         let triangles = earcutr::earcut(&self.coords, &self.hole_indices, 2);
@@ -51,6 +48,7 @@ impl GeomProcessor for Earcutr {
 
         // Reset polygon coords
         self.coords.clear();
+        self.hole_indices.clear();
 
         Ok(())
     }
