@@ -19,6 +19,8 @@ struct Earcutr {
 
 impl GeomProcessor for Earcutr {
     fn xy(&mut self, x: f64, y: f64, _idx: usize) -> Result<()> {
+        // Convert to normalized device coordinates:
+        // https://github.com/gfx-rs/gfx/tree/master/src/backend/dx12#normalized-coordinates
         let x = (x - self.center.0) / self.resolution;
         let y = (y - self.center.1) / self.resolution;
         self.coords.push(x);
@@ -66,7 +68,7 @@ pub fn read_fgb(bbox: (f64, f64, f64, f64), center: Vec2, resolution: f32) -> Me
     let geometry_type = fgb.header().geometry_type();
 
     let mut earcutr = Earcutr {
-        center: (center.x() as f64, center.y() as f64),
+        center: (center.x as f64, center.y as f64),
         resolution: resolution.into(),
         ..Default::default()
     };
@@ -90,7 +92,7 @@ pub async fn read_fgb_http(bbox: (f64, f64, f64, f64), center: Vec2, resolution:
     let geometry_type = fgb.header().geometry_type();
 
     let mut earcutr = Earcutr {
-        center: (center.x() as f64, center.y() as f64),
+        center: (center.x as f64, center.y as f64),
         resolution: resolution.into(),
         ..Default::default()
     };

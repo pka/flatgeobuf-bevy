@@ -13,8 +13,8 @@ fn main() {
     app.add_event::<UpdateMapEvent>()
         .add_resource(ClearColor(Color::rgb(1.0, 1.0, 1.0)))
         .add_resource(WindowDescriptor {
-            width: 978,
-            height: 733,
+            width: 978.0,
+            height: 733.0,
             ..Default::default()
         })
         .add_resource(Map {
@@ -90,7 +90,7 @@ fn pan_or_zoom(
     // set map resolution after end of zooming
     if zoom_paused {
         for (_, transform) in query.iter().take(1) {
-            let zfact = 1000.0 / transform.translation.z();
+            let zfact = 1000.0 / transform.translation.z;
             zoom = Some(1.0 + (1.0 - zfact) * 20.0);
         }
         state.last_zoom = None;
@@ -142,11 +142,11 @@ fn update_map(
 
 #[cfg(target_arch = "wasm32")]
 fn update_map_async(
-    commands: &'static mut Commands,
+    commands: &mut Commands,
     pool: Res<IoTaskPool>,
     window: Res<WindowDescriptor>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut meshes: ResMut<'static, Assets<Mesh>>,
+    mut meshes: ResMut<Assets<Mesh>>,
     mut map: ResMut<Map>,
     mut map_event_reader: Local<EventReader<UpdateMapEvent>>,
     map_events: Res<Events<UpdateMapEvent>>,
@@ -192,15 +192,15 @@ fn apply_map_event(
     }
     let resolution = map.resolution * map.zoom;
     let center = Vec2::new(
-        map.center.x() + map.offset.x() * resolution,
-        map.center.y() + map.offset.y() * resolution,
+        map.center.x + map.offset.x * resolution,
+        map.center.y + map.offset.y * resolution,
     );
     let wsize = Vec2::new(window.width as f32, window.height as f32);
     let bbox = (
-        (center.x() - wsize.x() / 2.0 * resolution) as f64,
-        (center.y() - wsize.y() / 2.0 * resolution) as f64,
-        (center.x() + wsize.x() / 2.0 * resolution) as f64,
-        (center.y() + wsize.y() / 2.0 * resolution) as f64,
+        (center.x - wsize.x / 2.0 * resolution) as f64,
+        (center.y - wsize.y / 2.0 * resolution) as f64,
+        (center.x + wsize.x / 2.0 * resolution) as f64,
+        (center.y + wsize.y / 2.0 * resolution) as f64,
     );
     (center, resolution, bbox)
 }

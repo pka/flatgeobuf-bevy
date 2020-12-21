@@ -21,9 +21,9 @@ web = [
 trace = ["bevy/trace_chrome"]
 
 [dependencies]
-bevy = {git = "https://github.com/bevyengine/bevy", rev = "7628f4a64e", default-features = false}
-bevy_webgl2 = {git = "https://github.com/mrk-its/bevy_webgl2", rev = "e34106ba1e", optional = true}
-winit = {version = "0.23.0", features = ["web-sys", "x11"], default-features = false}
+bevy = {version = "0.4.0", default-features = false}
+bevy_webgl2 = {version = "0.4.0", optional = true}
+winit = {version = "0.24.0", features = ["web-sys", "x11"], default-features = false}
 lyon = "0.16.2"
 earcutr = { git = "https://github.com/donbright/earcutr" }
 flatgeobuf = "0.3.4"
