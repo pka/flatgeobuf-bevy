@@ -152,29 +152,36 @@ fn update_map_async(
     map_events: Res<Events<UpdateMapEvent>>,
 ) {
     use crate::triangulate::read_fgb_http;
+    use flatgeobuf::*;
     if let Some(map_event) = map_event_reader.iter(&map_events).last() {
         let span = info_span!("update_map");
         let _update_map_span = span.enter();
         let (center, resolution, bbox) = apply_map_event(&window, &mut map, map_event);
         let offset = map.offset;
         let grey = materials.add(Color::rgb(0.25, 0.25, 0.25).into());
-        pool.spawn(async move {
-            let mesh = read_fgb_http(bbox, center, resolution).await;
-            // Remove previous sprite
-            if let Some(entity) = commands.current_entity() {
-                commands.despawn(entity);
-            }
-            let sprite = SpriteBundle {
-                material: grey,
-                mesh: meshes.add(mesh),
-                sprite: Sprite {
-                    size: Vec2::new(1.0, 1.0),
+        let mesh = pool.scope(|s| {
+            s.spawn(async move {
+                //bbox: (f64, f64, f64, f64), center: Vec2, resolution: f32
+                // let mesh = read_fgb_http(bbox, center, resolution).await;
+                //meshes.add(mesh)
+                // Remove previous sprite
+                if let Some(entity) = commands.current_entity() {
+                    commands.despawn(entity);
+                }
+                let sprite = SpriteBundle {
+                    material: grey,
+                    mesh: meshes.add(Mesh::new(
+                        bevy::render::pipeline::PrimitiveTopology::TriangleList,
+                    )), //mesh[0]),
+                    sprite: Sprite {
+                        size: Vec2::new(1.0, 1.0),
+                        ..Default::default()
+                    },
+                    transform: Transform::from_translation(offset),
                     ..Default::default()
-                },
-                transform: Transform::from_translation(offset),
-                ..Default::default()
-            };
-            commands.spawn(sprite);
+                };
+                commands.spawn(sprite);
+            });
         });
     }
 }
