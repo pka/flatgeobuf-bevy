@@ -1,6 +1,6 @@
 # FlatGeobuf rendering with Bevy Engine
 
-Experimental rendering of [FlatGeobuf](https://bjornharrtell.github.io/flatgeobuf/) geometries
+Experimental rendering of [FlatGeobuf](https://flatgeobuf.org/) geometries
 with [Bevy Engine](https://bevyengine.org/).
 
 Uses WebGPU for native targets and WebGL2 for Web platform (WASM).

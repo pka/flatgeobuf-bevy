@@ -26,9 +26,10 @@ bevy_webgl2 = {git = "https://github.com/mrk-its/bevy_webgl2", rev = "e34106ba1e
 winit = {version = "0.23.0", features = ["web-sys", "x11"], default-features = false}
 lyon = "0.16.2"
 earcutr = { git = "https://github.com/donbright/earcutr" }
-flatgeobuf = "0.3.4"
-geozero = "0.5.1"
+flatgeobuf = "0.4.1"
+geozero = "0.6.0"
 wasm-bindgen = {version="0.2.68", optional = true}
+env_logger = "0.8.2"
 
 [profile.dev]
 opt-level = 1

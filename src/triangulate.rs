@@ -95,9 +95,12 @@ pub async fn read_fgb_http(bbox: (f64, f64, f64, f64), center: Vec2, resolution:
         ..Default::default()
     };
 
-    fgb.select_bbox(bbox.0, bbox.1, bbox.2, bbox.3)
+    let cnt = fgb
+        .select_bbox(bbox.0, bbox.1, bbox.2, bbox.3)
         .await
         .unwrap();
+    info!("bbox: {:?}", &bbox);
+    info!(cnt);
     while let Some(feature) = fgb.next().await.unwrap() {
         let geometry = feature.geometry().unwrap();
         geometry.process(&mut earcutr, geometry_type).unwrap();
