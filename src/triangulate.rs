@@ -73,7 +73,8 @@ pub fn read_fgb(bbox: (f64, f64, f64, f64), center: Vec2, resolution: f32) -> Me
         ..Default::default()
     };
 
-    fgb.select_bbox(bbox.0, bbox.1, bbox.2, bbox.3).unwrap();
+    let fcnt = fgb.select_bbox(bbox.0, bbox.1, bbox.2, bbox.3).unwrap();
+    dbg!(fcnt);
     while let Some(feature) = fgb.next().unwrap() {
         let geometry = feature.geometry().unwrap();
         geometry.process(&mut earcutr, geometry_type).unwrap();
