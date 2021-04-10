@@ -58,14 +58,13 @@ impl GeomProcessor for Earcutr {
 
 #[allow(dead_code)]
 pub fn read_fgb(bbox: (f64, f64, f64, f64), center: Vec2, resolution: f32) -> Mesh {
+    use seek_bufread::BufReader;
     use std::fs::File;
-    use std::io::BufReader;
 
     let span = info_span!("read_fgb");
     let _read_fgb_span = span.enter();
     let mut file = BufReader::new(File::open("osm-buildings-zurich.fgb").unwrap());
     let mut fgb = FgbReader::open(&mut file).unwrap();
-    let geometry_type = fgb.header().geometry_type();
 
     let mut earcutr = Earcutr {
         center: (center.x as f64, center.y as f64),
@@ -76,8 +75,7 @@ pub fn read_fgb(bbox: (f64, f64, f64, f64), center: Vec2, resolution: f32) -> Me
     let fcnt = fgb.select_bbox(bbox.0, bbox.1, bbox.2, bbox.3).unwrap();
     dbg!(fcnt);
     while let Some(feature) = fgb.next().unwrap() {
-        let geometry = feature.geometry().unwrap();
-        geometry.process(&mut earcutr, geometry_type).unwrap();
+        feature.process_geom(&mut earcutr).unwrap();
     }
 
     earcutr.into()
@@ -90,7 +88,6 @@ pub async fn read_fgb_http(bbox: (f64, f64, f64, f64), center: Vec2, resolution:
     let mut fgb = HttpFgbReader::open("https://pkg.sourcepole.ch/osm-buildings-zurich.fgb")
         .await
         .unwrap();
-    let geometry_type = fgb.header().geometry_type();
 
     let mut earcutr = Earcutr {
         center: (center.x as f64, center.y as f64),
@@ -102,8 +99,7 @@ pub async fn read_fgb_http(bbox: (f64, f64, f64, f64), center: Vec2, resolution:
         .await
         .unwrap();
     while let Some(feature) = fgb.next().await.unwrap() {
-        let geometry = feature.geometry().unwrap();
-        geometry.process(&mut earcutr, geometry_type).unwrap();
+        feature.process_geom(&mut earcutr).unwrap();
     }
 
     earcutr.into()
