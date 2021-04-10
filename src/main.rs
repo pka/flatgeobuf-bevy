@@ -150,26 +150,24 @@ fn update_map_async(
     mut map_event_reader: EventReader<UpdateMapEvent>,
 ) {
     use crate::triangulate::read_fgb_http;
-    use flatgeobuf::*;
     if let Some(map_event) = map_event_reader.iter().last() {
         let span = info_span!("update_map");
         let _update_map_span = span.enter();
         let (center, resolution, bbox) = apply_map_event(&window, &mut map, map_event);
-        let offset = map.offset;
         let grey = materials.add(Color::rgb(0.25, 0.25, 0.25).into());
-        let mesh = pool.scope(|s| {
-            s.spawn(async move {
-                //bbox: (f64, f64, f64, f64), center: Vec2, resolution: f32
-                // let mesh = read_fgb_http(bbox, center, resolution).await;
-                //meshes.add(mesh)
+        pool.scope(|s| {
+            s.spawn_local(async move {
+                info!("read_fgb_http");
+                let mesh = read_fgb_http(bbox, center, resolution).await;
+                // Panics in HttpFgbReader::open await with "cannot recursively acquire mutex"
+                info!("read_fgb_http finished");
+
                 // Remove previous mesh_bundle
                 commands.remove_resource::<PbrBundle>(); //FIXME: remove from world?
 
                 let mesh_bundle = PbrBundle {
                     material: grey,
-                    mesh: meshes.add(Mesh::new(
-                        bevy::render::pipeline::PrimitiveTopology::TriangleList,
-                    )), //mesh[0]),
+                    mesh: meshes.add(mesh),
                     transform: Transform::from_translation(map.offset),
                     ..Default::default()
                 };
