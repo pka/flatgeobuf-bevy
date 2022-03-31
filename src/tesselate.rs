@@ -22,8 +22,8 @@ struct PathDrawer {
 
 impl GeomProcessor for PathDrawer {
     fn xy(&mut self, x: f64, y: f64, idx: usize) -> Result<()> {
-        let x = (x as f32 - self.center.x()) / self.resolution;
-        let y = (y as f32 - self.center.y()) / self.resolution;
+        let x = (x as f32 - self.center.x) / self.resolution;
+        let y = (y as f32 - self.center.y) / self.resolution;
         if idx == 0 {
             self.builder.borrow_mut().move_to(point(x, y));
         } else {

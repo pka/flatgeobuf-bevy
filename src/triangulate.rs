@@ -66,7 +66,7 @@ pub fn read_fgb(bbox: (f64, f64, f64, f64), center: Vec2, resolution: f32) -> Me
     let geometry_type = fgb.header().geometry_type();
 
     let mut earcutr = Earcutr {
-        center: (center.x() as f64, center.y() as f64),
+        center: (center.x as f64, center.y as f64),
         resolution: resolution.into(),
         ..Default::default()
     };
@@ -90,7 +90,7 @@ pub async fn read_fgb_http(bbox: (f64, f64, f64, f64), center: Vec2, resolution:
     let geometry_type = fgb.header().geometry_type();
 
     let mut earcutr = Earcutr {
-        center: (center.x() as f64, center.y() as f64),
+        center: (center.x as f64, center.y as f64),
         resolution: resolution.into(),
         ..Default::default()
     };
