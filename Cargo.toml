@@ -16,6 +16,7 @@ native = [
 web = [
   "bevy_webgl2",
   "wasm-bindgen",
+  "getrandom/js"
 ]
 
 trace = ["bevy/trace_chrome"]
@@ -28,8 +29,11 @@ lyon = "0.16.2"
 earcutr = { git = "https://github.com/donbright/earcutr" }
 flatgeobuf = "0.4.1"
 geozero = "0.6.0"
-wasm-bindgen = {version="0.2.68", optional = true}
+wasm-bindgen = {version="=0.2.78", optional = true}
 env_logger = "0.8.2"
+getrandom = { version = "0.2"}
+uuid = {version="=0.8.1"}
+console_error_panic_hook = "0.1.7"
 
 [profile.dev]
 opt-level = 1

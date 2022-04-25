@@ -21,7 +21,7 @@ or
 Prerequisites:
 
 ```
-cargo install wasm-bindgen-cli
+cargo install wasm-bindgen-cli --version 0.2.78
 cargo install basic-http-server
 ```
 
